@@ -1,62 +1,54 @@
-import { Component, ViewChild, OnInit, ElementRef, AfterViewInit } from '@angular/core';
-import WebViewer from '@pdftron/webviewer';
+import {
+  Component,
+  ViewChild,
+  OnInit,
+  ElementRef,
+  AfterViewInit,
+} from "@angular/core";
+import WebViewer from "@pdftron/webviewer";
+import { initializeHTMLViewer } from "@pdftron/webviewer-html";
 
 @Component({
-  selector: 'app-root',
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css']
+  selector: "app-root",
+  templateUrl: "./app.component.html",
+  styleUrls: ["./app.component.css"],
 })
 export class AppComponent implements OnInit, AfterViewInit {
-  @ViewChild('viewer', { static: false }) viewer: ElementRef;
-  wvInstance: any;
+  @ViewChild("viewer", { static: false }) viewer: ElementRef;
 
   ngAfterViewInit(): void {
+    WebViewer(
+      {
+        path: "lib",
+      },
+      this.viewer.nativeElement
+    ).then(async (instance) => {
+      const {
+        loadHTMLPage,
+        loadHTMLPages,
+        toggleAnnotations,
+      } = await initializeHTMLViewer(instance);
 
-    WebViewer({
-      path: '../lib',
-      initialDoc: '../files/webviewer-demo-annotated.pdf'
-    }, this.viewer.nativeElement).then(instance => {
-      this.wvInstance = instance;
+      loadHTMLPage(
+        "https://www.openstreetmap.org/export/embed.html?bbox=-0.004017949104309083%2C51.47612752641776%2C0.00030577182769775396%2C51.478569861898606&layer=mapnik",
+        500,
+        500
+      );
 
-      // now you can access APIs through this.webviewer.getInstance()
-      instance.openElements(['notesPanel']);
-      // see https://www.pdftron.com/documentation/web/guides/ui/apis for the full list of APIs
-
-      // or listen to events from the viewer element
-      this.viewer.nativeElement.addEventListener('pageChanged', (e) => {
-        const [ pageNumber ] = e.detail;
-        console.log(`Current page is ${pageNumber}`);
+      instance.setHeaderItems((header) => {
+        header.push({
+          type: "actionButton",
+          img:
+            '<svg id="icons" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><defs><style>.cls-1{fill:#8c8c8c;}</style></defs><title>icon - lin- header - annotations</title><path class="cls-1" d="M19.5,12.6l1.9-2.2v9.4A2.2,2.2,0,0,1,19.3,22H4.3A2.24,2.24,0,0,1,2,19.8V4.7A2.2,2.2,0,0,1,1,2.5h9.5L11.7,4.4H3.8V20.1H19.4V12.6ZM22,5.9a2.2,2.2,0,0,1-.6,1.5L11,17.7H6.3V12.9L16.7,2.6a2.17,2.17,0,0,1,3,0l1.7,1.7A2.27,2.27,0,0,1,22,9ZM16.9,9.2,14.7,7,8,13.8V16h2.1ZM20.2,6,18,3.8,16.1,5.7l2.2,2.2Z"></path></svg>',
+          onClick: () => {
+            toggleAnnotations();
+          },
+        });
       });
-
-      // or from the docViewer instance
-      instance.docViewer.on('annotationsLoaded', () => {
-        console.log('annotations loaded');
-      });
-
-      instance.docViewer.on('documentLoaded', this.wvDocumentLoadedHandler)
-    })
+    });
   }
 
   ngOnInit() {
-    this.wvDocumentLoadedHandler = this.wvDocumentLoadedHandler.bind(this);
-  }
-
-  wvDocumentLoadedHandler(): void {
-    // you can access docViewer object for low-level APIs
-    const docViewer = this.wvInstance;
-    const annotManager = this.wvInstance.annotManager;
-    // and access classes defined in the WebViewer iframe
-    const { Annotations } = this.wvInstance;
-    const rectangle = new Annotations.RectangleAnnotation();
-    rectangle.PageNumber = 1;
-    rectangle.X = 100;
-    rectangle.Y = 100;
-    rectangle.Width = 250;
-    rectangle.Height = 250;
-    rectangle.StrokeThickness = 5;
-    rectangle.Author = annotManager.getCurrentUser();
-    annotManager.addAnnotation(rectangle);
-    annotManager.drawAnnotations(rectangle.PageNumber);
-    // see https://www.pdftron.com/api/web/WebViewer.html for the full list of low-level APIs
+    // this.wvDocumentLoadedHandler = this.wvDocumentLoadedHandler.bind(this);
   }
 }
